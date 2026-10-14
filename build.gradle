@@ -1,0 +1,66 @@
+plugins {
+    id 'java'
+}
+
+group = 'ru.z3r0ing'
+version = '1.0-SNAPSHOT'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+sourceSets {
+    benchmark {
+        java.srcDir 'src/jmh/java'
+        resources.srcDir 'src/jmh/resources'
+    }
+    jcstress {
+        java.srcDir 'src/jcstress/java'
+        resources.srcDir 'src/jcstress/resources'
+    }
+}
+
+configurations {
+    benchmarkImplementation.extendsFrom implementation
+    benchmarkRuntimeOnly.extendsFrom runtimeOnly
+    jcstressImplementation.extendsFrom implementation
+    jcstressRuntimeOnly.extendsFrom runtimeOnly
+}
+
+dependencies {
+    testImplementation platform('org.junit:junit-bom:5.10.0')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+    benchmarkImplementation 'org.openjdk.jmh:jmh-core:1.37'
+    benchmarkAnnotationProcessor 'org.openjdk.jmh:jmh-generator-annprocess:1.37'
+
+    jcstressImplementation 'org.openjdk.jcstress:jcstress-core:0.16'
+    jcstressAnnotationProcessor 'org.openjdk.jcstress:jcstress-core:0.16'
+}
+
+tasks.register('jmh', JavaExec) {
+    group = 'benchmark'
+    description = 'Runs JMH benchmarks from src/jmh/java.'
+    dependsOn tasks.named('benchmarkClasses')
+    classpath = sourceSets.benchmark.runtimeClasspath
+    mainClass = 'org.openjdk.jmh.Main'
+}
+
+tasks.register('jcstress', JavaExec) {
+    group = 'verification'
+    description = 'Runs jcstress tests from src/jcstress/java.'
+    dependsOn tasks.named('jcstressClasses')
+    classpath = sourceSets.jcstress.runtimeClasspath
+    mainClass = 'org.openjdk.jcstress.Main'
+}
+
+test {
+    useJUnitPlatform()
+}
